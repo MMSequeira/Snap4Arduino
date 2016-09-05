@@ -53,8 +53,11 @@ s4aTempDict = {
     'digital reading %digitalPin':
         '数字信号针脚 %digitalPin 读取中',
 
-    'connect arduino at %port':
-        '连接arduino端口 %port',
+    'connect arduino at %s':
+        '连接arduino端口 %s',
+
+    'disconnect arduino':
+        '断开与arduino的连接',
 
     'setup digital pin %digitalPin as %pinMode':
         '配置数字针脚 %digitalPin 为 %pinMode',
@@ -65,7 +68,7 @@ s4aTempDict = {
     'set servo %servoPin to %servoValue':
         '设置伺服针脚 %servoPin 为 %servoValue',
 
-    'set PWM pin %pwmPin to %n':
+    'set pin %pwmPin to value %n':
         '设置PWM %pwmPin 为 %n',
 
     'Connecting board at port\n': 

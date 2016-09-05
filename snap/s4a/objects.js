@@ -2,210 +2,9 @@
 
 SpriteMorph.prototype.originalInit = SpriteMorph.prototype.init;
 SpriteMorph.prototype.init = function(globals) {
-    var myself = this;
-
-    myself.originalInit(globals);
-
-    myself.arduino = {
-        board : undefined,	// Reference to arduino board - to be created by new firmata.Board()
-        connecting : false,	// Flag to avoid multiple attempts to connect
-        disconnecting : false,  // Flag to avoid serialport communication when it is being closed
-        justConnected: false,	// Flag to avoid double attempts
-        keepAliveIntervalID: null
-    };
-
-    // This function just asks for the version and checks if we've received it after a timeout
-    myself.arduino.keepAlive = function() {
-        if (world.Arduino.keepAlive) {
-            if (myself.arduino.board.version.major !== undefined) {
-                // Everything looks fine, let's try again
-                myself.arduino.board.version = {};
-                myself.arduino.board.reportVersion(nop);
-            } else {
-                // Connection dropped! Let's disconnect!
-                myself.arduino.disconnect(); 
-            }
-        }
-    }
-
-    myself.arduino.disconnect = function(silent) {
-
-        if (this.isBoardReady()) { // Prevent disconnection attempts before board is actually connected
-            this.disconnecting = true;
-            this.board.sp.close();
-            this.closeHandler(silent);
-        } else if (!this.board) {  // Don't send info message if the board has been connected
-            if (!silent) {
-                ide.inform(myself.name, localize('Board is not connected'))
-            }
-        } 
-    }
-
-    // This should belong to the IDE
-    myself.arduino.showMessage = function(msg) {
-        if (!this.message) { this.message = new DialogBoxMorph() };
-
-        var txt = new TextMorph(
-                msg,
-                this.fontSize,
-                this.fontStyle,
-                true,
-                false,
-                'center',
-                null,
-                null,
-                MorphicPreferences.isFlat ? null : new Point(1, 1),
-                new Color(255, 255, 255)
-                );
-
-        if (!this.message.key) { this.message.key = 'message' + myself.name + msg };
-
-        this.message.labelString = myself.name;
-        this.message.createLabel();
-        if (msg) { this.message.addBody(txt) };
-        this.message.drawNew();
-        this.message.fixLayout();
-        this.message.popUp(world);
-        this.message.show();
-    }
-
-    myself.arduino.hideMessage = function() {
-        if (this.message) {
-            this.message.cancel();
-            this.message = null;
-        }
-    }
-
-    myself.arduino.attemptConnection = function() {
-
-        if (!this.connecting) {
-            if (this.board === undefined) {
-                // Get list of ports (Arduino compatible)
-                var ports = world.Arduino.getSerialPorts(function(ports) {
-                    // Check if there is at least one port on ports object (which for some reason was defined as an array)
-                    if (Object.keys(ports).length == 0) {
-                        ide.inform(myself.name, localize('Could not connect an Arduino\nNo boards found'));
-                        return;
-                    } else if (Object.keys(ports).length == 1) {
-                        myself.arduino.connect(ports[Object.keys(ports)[0]]);
-                    } else if (Object.keys(ports).length > 1) { 
-                        var portMenu = new MenuMorph(this, 'select a port');
-                        Object.keys(ports).forEach(function(each) {
-                            portMenu.addItem(each, function() { 
-                                myself.arduino.connect(each);
-                            })
-                        });
-                        portMenu.popUpAtHand(world);		
-                    }
-                });
-            } else {
-                ide.inform(myself.name, localize('There is already a board connected to this sprite'));
-            }
-        }
-
-        if (this.justConnected) {
-            this.justConnected = undefined;
-            return;
-        }
-
-    }
-
-    myself.arduino.closeHandler = function(silent) {
-
-        var portName = 'unknown',
-            thisArduino = myself.arduino;
-
-        if (thisArduino.board) {
-            portName = thisArduino.board.sp.path;
-            
-            thisArduino.board.sp.removeListener('disconnect', thisArduino.disconnectHandler);
-            thisArduino.board.sp.removeListener('close', thisArduino.closeHandler);
-            thisArduino.board.sp.removeListener('error', thisArduino.errorHandler);
-
-            thisArduino.board = undefined;
-        };
-
-        clearInterval(thisArduino.keepAliveIntervalID);
-
-        world.Arduino.unlockPort(thisArduino.port);
-        thisArduino.connecting = false;
-        thisArduino.disconnecting = false;
-
-        if (thisArduino.disconnected & !silent) {
-            ide.inform(myself.name, localize('Board was disconnected from port\n') + portName + '\n\nIt seems that someone pulled the cable!');
-            thisArduino.disconnected = false;
-        } else if (!silent) {
-            ide.inform(myself.name, localize('Board was disconnected from port\n') + portName);
-        }
-    }
-
-    myself.arduino.disconnectHandler = function() {
-        // This fires up when the cable is plugged, but only in recent versions of the serialport plugin
-        myself.arduino.disconnected = true;
-    }
-
-    myself.arduino.errorHandler = function(err) {
-        ide.inform(myself.name, localize('An error was detected on the board\n\n') + err, myself.arduino.disconnect(true));
-    }
-
-    myself.arduino.connect = function(port) {
-
-        this.disconnect(true);
-
-        this.showMessage(localize('Connecting board at port\n') + port);
-        this.connecting = true;
-
-        this.board = new world.Arduino.firmata.Board(port, function(err) { 
-            if (!err) { 
-
-                // Clear timeout to avoid problems if connection is closed before timeout is completed
-                clearTimeout(myself.arduino.connectionTimeout); 
-
-                // Start the keepAlive interval
-                myself.arduino.keepAliveIntervalID = setInterval(myself.arduino.keepAlive, 5000);
-
-                myself.arduino.board.sp.on('disconnect', myself.arduino.disconnectHandler);
-                myself.arduino.board.sp.on('close', myself.arduino.closeHandler);
-                myself.arduino.board.sp.on('error', myself.arduino.errorHandler);
-
-                world.Arduino.lockPort(port);
-                myself.arduino.port = myself.arduino.board.sp.path;
-                myself.arduino.connecting = false;
-                myself.arduino.justConnected = true;
-                myself.arduino.board.connected = true;
-
-                myself.arduino.hideMessage();
-                ide.inform(myself.name, localize('An Arduino board has been connected. Happy prototyping!'));   
-            } else {
-                myself.arduino.hideMessage();
-                ide.inform(myself.name, localize('Error connecting the board.') + ' ' + err, myself.arduino.closeHandler(true));
-            }
-            return;
-        });
-
-        // Set timeout to check if device does not speak firmata (in such case new Board callback was never called, but board object exists) 
-        myself.arduino.connectionTimeout = setTimeout(function() {
-            // If board.versionReceived == false, the board has not established a firmata connection
-            if (myself.arduino.board && !myself.arduino.board.versionReceived) {
-                var port = myself.arduino.board.sp.path;
-
-                myself.arduino.hideMessage();
-                ide.inform(myself.name, localize('Could not talk to Arduino in port\n') + port + '\n\n' + localize('Check if firmata is loaded.'))
-
-            // silently closing the connection attempt
-            myself.arduino.disconnect(true); 
-            }
-        }, 10000)
-    }
-
-    myself.arduino.isBoardReady = function() {
-        return ((this.board !== undefined) 
-                && (this.board.pins.length>0) 
-                && (!this.disconnecting));
-    }
-}
-
-
+    this.originalInit(globals);
+    this.arduino = new Arduino(this);
+};
 
 // Definition of a new Arduino Category
 
@@ -213,7 +12,7 @@ SpriteMorph.prototype.categories.push('arduino');
 SpriteMorph.prototype.blockColor['arduino'] = new Color(64, 136, 182);
 
 SpriteMorph.prototype.originalInitBlocks = SpriteMorph.prototype.initBlocks;
-SpriteMorph.prototype.initArduinoBlocks = function() {
+SpriteMorph.prototype.initArduinoBlocks = function () {
 
     this.blocks.reportAnalogReading = 
     {
@@ -221,7 +20,7 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         type: 'reporter',
         category: 'arduino',
         spec: 'analog reading %analogPin',
-        translatable: true
+        transpilable: true
     };
 
     this.blocks.reportDigitalReading = 
@@ -230,7 +29,7 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         type: 'predicate',
         category: 'arduino',
         spec: 'digital reading %digitalPin',
-        translatable: true
+        transpilable: true
     };
 
     this.blocks.connectArduino =
@@ -241,6 +40,14 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         spec: 'connect arduino at %s'
     };
 
+    this.blocks.disconnectArduino =
+    {
+        only: SpriteMorph,
+        type: 'command',
+        category: 'arduino',
+        spec: 'disconnect arduino'
+    };
+
     // Keeping this block spec, although it's not used anymore!
     this.blocks.setPinMode =
     {
@@ -248,8 +55,8 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         type: 'command',
         category: 'arduino',
         spec: 'setup digital pin %digitalPin as %pinMode',
-        defaults: [null, 'servo'],
-        translatable: true
+        defaults: [null, localize('servo')],
+        transpilable: true
     };
 
     this.blocks.digitalWrite =
@@ -258,7 +65,7 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         type: 'command',
         category: 'arduino',
         spec: 'set digital pin %digitalPin to %b',
-        translatable: true
+        transpilable: true
     };
 
     this.blocks.servoWrite =
@@ -267,8 +74,8 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         type: 'command',
         category: 'arduino',
         spec: 'set servo %servoPin to %servoValue',
-        defaults: [null, 'clockwise'],
-        translatable: true
+        defaults: [null, localize('clockwise')],
+        transpilable: true
     };
 
     this.blocks.pwmWrite =
@@ -276,48 +83,54 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
         only: SpriteMorph,
         type: 'command',
         category: 'arduino',
-        spec: 'set PWM pin %pwmPin to %n',
-        translatable: true
+        spec: 'set pin %pwmPin to value %n',
+	defaults: [null, 128],
+        transpilable: true
     };
 
     // Ardui... nization? 
     // Whatever, let's dumb this language down:
 
-    this.blocks.receiveGo.translatable = true;
-    this.blocks.doWait.translatable = true;
-    this.blocks.doForever.translatable = true;
-    this.blocks.doRepeat.translatable = true;
-    this.blocks.doIf.translatable = true;
-    this.blocks.doIfElse.translatable = true;
-    this.blocks.reportSum.translatable = true;
-    this.blocks.reportDifference.translatable = true;
-    this.blocks.reportProduct.translatable = true;
-    this.blocks.reportQuotient.translatable = true;
-    this.blocks.reportModulus.translatable = true;
-    this.blocks.reportMonadic.translatable = true;
-    this.blocks.reportRandom.translatable = true;
-    this.blocks.reportLessThan.translatable = true;
-    this.blocks.reportEquals.translatable = true;
-    this.blocks.reportGreaterThan.translatable = true;
-    this.blocks.reportAnd.translatable = true;
-    this.blocks.reportOr.translatable = true;
-    this.blocks.reportNot.translatable = true;
-    this.blocks.reportTrue.translatable = true;
-    this.blocks.reportFalse.translatable = true;
-    this.blocks.reportJoinWords.translatable = true;
-    this.blocks.doSetVar.translatable = true;
-    this.blocks.doChangeVar.translatable = true;
-    this.blocks.doDeclareVariables.translatable = true;
+    this.blocks.receiveGo.transpilable = true;
+    this.blocks.receiveMessage.transpilable = true;
+    this.blocks.doBroadcastAndWait.transpilable = true;
+    this.blocks.doWait.transpilable = true;
+    this.blocks.doForever.transpilable = true;
+    this.blocks.doRepeat.transpilable = true;
+    this.blocks.doIf.transpilable = true;
+    this.blocks.doIfElse.transpilable = true;
+    this.blocks.reportSum.transpilable = true;
+    this.blocks.reportDifference.transpilable = true;
+    this.blocks.reportProduct.transpilable = true;
+    this.blocks.reportQuotient.transpilable = true;
+    this.blocks.reportModulus.transpilable = true;
+    this.blocks.reportMonadic.transpilable = true;
+    this.blocks.reportRandom.transpilable = true;
+    this.blocks.reportLessThan.transpilable = true;
+    this.blocks.reportEquals.transpilable = true;
+    this.blocks.reportGreaterThan.transpilable = true;
+    this.blocks.reportAnd.transpilable = true;
+    this.blocks.reportOr.transpilable = true;
+    this.blocks.reportNot.transpilable = true;
+    this.blocks.reportBoolean.transpilable = true;
+    this.blocks.reportJoinWords.transpilable = true;
+    this.blocks.doSetVar.transpilable = true;
+    this.blocks.doChangeVar.transpilable = true;
+    this.blocks.doDeclareVariables.transpilable = true;
 
     StageMorph.prototype.codeMappings['delim'] = ',';
-    StageMorph.prototype.codeMappings['tempvars_delim'] = ',';
+    StageMorph.prototype.codeMappings['tempvars_delim'] = ', ';
     StageMorph.prototype.codeMappings['string'] = '"<#1>"';
 
-    StageMorph.prototype.codeMappings['doWait'] = 'delay(<#1> * 1000);';
-    StageMorph.prototype.codeMappings['doForever'] = 'void loop() {\n  <#1>\n}';
-    StageMorph.prototype.codeMappings['doRepeat'] = 'for (int i = 0; i < <#1>; i++) {\n  <#2>\n}';
-    StageMorph.prototype.codeMappings['doIf'] = 'if (<#1>) {\n  <#2>\n}';
-    StageMorph.prototype.codeMappings['doIfElse'] = 'if (<#1>) {\n  <#2>\n} else {\n  <#3>\n}';
+    StageMorph.prototype.codeMappings['receiveGo'] = 'void setup() {';
+    StageMorph.prototype.codeMappings['doBroadcastAndWait'] = '  !call!<#1>();';
+    StageMorph.prototype.codeMappings['receiveMessage'] = 'void <#1>() {';
+
+    StageMorph.prototype.codeMappings['doWait'] = '  delay(<#1> * 1000);';
+    StageMorph.prototype.codeMappings['doForever'] = '}\n\nvoid loop() {\n  <#1>\n}';
+    StageMorph.prototype.codeMappings['doRepeat'] = '  for (int i = 0; i < <#1>; i++) {\n  <#2>\n  }';
+    StageMorph.prototype.codeMappings['doIf'] = '  if (<#1>) {\n  <#2>\n}';
+    StageMorph.prototype.codeMappings['doIfElse'] = '  if (<#1>) {\n  <#2>\n} else {\n  <#3>\n}';
 
     StageMorph.prototype.codeMappings['reportSum'] = '(<#1> + <#2>)';
     StageMorph.prototype.codeMappings['reportDifference'] = '(<#1> - <#2>)';
@@ -332,39 +145,38 @@ SpriteMorph.prototype.initArduinoBlocks = function() {
     StageMorph.prototype.codeMappings['reportAnd'] = '(<#1> && <#2>)';
     StageMorph.prototype.codeMappings['reportOr'] = '(<#1> || <#2>)';
     StageMorph.prototype.codeMappings['reportNot'] = '!(<#1>)';
-    StageMorph.prototype.codeMappings['reportTrue'] = 'true';
-    StageMorph.prototype.codeMappings['reportFalse'] = 'false';
+    StageMorph.prototype.codeMappings['reportBoolean'] = '<#1>';
 
-    StageMorph.prototype.codeMappings['doSetVar'] = '<#1> = <#2>;';
-    StageMorph.prototype.codeMappings['doChangeVar'] = '<#1> += <#2>;';
-    StageMorph.prototype.codeMappings['doDeclareVariables'] = 'int <#1>;'; // How do we deal with types? Damn types...
+    StageMorph.prototype.codeMappings['doSetVar'] = '  <#1> = <#2>;';
+    StageMorph.prototype.codeMappings['doChangeVar'] = '  <#1> += <#2>;';
+    StageMorph.prototype.codeMappings['doDeclareVariables'] = 'int <#1> = 0;'; // How do we deal with types? Damn types...
 
     StageMorph.prototype.codeMappings['reportAnalogReading'] = 'analogRead(<#1>)';
     StageMorph.prototype.codeMappings['reportDigitalReading'] = 'digitalRead(<#1>)';
-    StageMorph.prototype.codeMappings['setPinMode'] = 'pinMode(<#1>, <#2>);';
-    StageMorph.prototype.codeMappings['digitalWrite'] = 'digitalWrite(<#1>, <#2>);';
-    StageMorph.prototype.codeMappings['servoWrite'] = 'servo<#1>.write(<#2>);';
-    StageMorph.prototype.codeMappings['pwmWrite'] = 'analogWrite(<#1>, <#2>);';
+    StageMorph.prototype.codeMappings['setPinMode'] = '  pinMode(<#1>, <#2>);';
+    StageMorph.prototype.codeMappings['digitalWrite'] = '  digitalWrite(<#1>, <#2>);';
+    StageMorph.prototype.codeMappings['servoWrite'] = '  servo<#1>.write(<#2>);';
+    StageMorph.prototype.codeMappings['pwmWrite'] = '  analogWrite(<#1>, <#2>);';
 }
 
 SpriteMorph.prototype.initBlocks =  function() {
     this.originalInitBlocks();
     this.initArduinoBlocks();
-}
+};
 
 SpriteMorph.prototype.initBlocks();
 
 // blockTemplates decorator
 
 SpriteMorph.prototype.originalBlockTemplates = SpriteMorph.prototype.blockTemplates;
-SpriteMorph.prototype.blockTemplates = function(category) {
+SpriteMorph.prototype.blockTemplates = function (category) {
     var myself = this;
 
     var blocks = myself.originalBlockTemplates(category); 
 
     //  Button that triggers a connection attempt 
 
-    var arduinoConnectButton = new PushButtonMorph(
+    this.arduinoConnectButton = new PushButtonMorph(
             null,
             function () {
                 myself.arduino.attemptConnection();
@@ -374,7 +186,7 @@ SpriteMorph.prototype.blockTemplates = function(category) {
 
     //  Button that triggers a disconnection from board
 
-    var arduinoDisconnectButton = new PushButtonMorph(
+    this.arduinoDisconnectButton = new PushButtonMorph(
             null,
             function () {
                 myself.arduino.disconnect();;
@@ -382,25 +194,432 @@ SpriteMorph.prototype.blockTemplates = function(category) {
             'Disconnect Arduino'
             );
 
-    function blockBySelector(selector) {
+    function arduinoWatcherToggle (selector) {
+        if (StageMorph.prototype.hiddenPrimitives[selector]) {
+            return null;
+        }
+        var info = SpriteMorph.prototype.blocks[selector];
+
+        return new ToggleMorph(
+            'checkbox',
+            this,
+            function () {
+                var reporter = detect(blocks, function (each) {
+                        return (each.selector === selector)
+                    }),
+                    pin = reporter.inputs()[0].contents().text;
+
+                if (!pin) { return };
+
+                myself.arduinoWatcher(
+                    selector,
+                    localize(info.spec),
+                    myself.blockColor[info.category],
+                    pin
+                );
+            },
+            null,
+            function () {
+                var reporter = detect(blocks, function (each) {
+                    return (each && each.selector === selector)
+                });
+
+                return reporter &&
+                    myself.showingArduinoWatcher(selector, reporter.inputs()[0].contents().text);
+            },
+            null
+        );
+    }
+    function blockBySelector (selector) {
+        if (StageMorph.prototype.hiddenPrimitives[selector]) {
+            return null;
+        }
         var newBlock = SpriteMorph.prototype.blockForSelector(selector, true);
         newBlock.isTemplate = true;
         return newBlock;
     };
 
+    var analogToggle = arduinoWatcherToggle('reportAnalogReading'),
+        reportAnalog = blockBySelector('reportAnalogReading'),
+        digitalToggle = arduinoWatcherToggle('reportDigitalReading'),
+        reportDigital = blockBySelector('reportDigitalReading');
+    
+    if (reportAnalog) {
+        reportAnalog.toggle = analogToggle;
+    }
+
+    if (reportDigital) {
+        reportDigital.toggle = digitalToggle;
+    }
+
     if (category === 'arduino') {
-        blocks.push(arduinoConnectButton);
-        blocks.push(arduinoDisconnectButton);
+        blocks.push(this.arduinoConnectButton);
+        blocks.push(this.arduinoDisconnectButton);
         blocks.push('-');
         blocks.push(blockBySelector('connectArduino'));
+        blocks.push(blockBySelector('disconnectArduino'));
         blocks.push('-');
         blocks.push(blockBySelector('servoWrite'));
         blocks.push(blockBySelector('digitalWrite'));
         blocks.push(blockBySelector('pwmWrite'));
         blocks.push('-');
-        blocks.push(blockBySelector('reportAnalogReading'));
-        blocks.push(blockBySelector('reportDigitalReading'));
-    };
+        blocks.push(analogToggle);
+        blocks.push(reportAnalog);
+        blocks.push(digitalToggle);
+        blocks.push(reportDigital);
+
+    } else if (category === 'other') {
+        button = new PushButtonMorph(
+                null,
+                function () {
+                    var ide = myself.parentThatIsA(IDE_Morph),
+                    stage = myself.parentThatIsA(StageMorph);
+                    new BlockDialogMorph(
+                        null,
+                        function (definition) {
+                            if (definition.spec !== '') {
+                                if (definition.isGlobal) {
+                                    stage.globalBlocks.push(definition);
+                                } else {
+                                    myself.customBlocks.push(definition);
+                                }
+                                ide.flushPaletteCache();
+                                ide.refreshPalette();
+                                new BlockEditorMorph(definition, myself).popUp();
+                            }
+                        },
+                        myself
+                        ).prompt(
+                            'Make a block',
+                            null,
+                            myself.world()
+                            );
+                },
+                'Make a block'
+            );
+//        button.userMenu = helpMenu;
+        button.selector = 'addCustomBlock';
+        button.showHelp = BlockMorph.prototype.showHelp;
+        blocks.push(button);
+    }
 
     return blocks;
-}
+};
+
+// Removing 'other' blocks from 'variables' category
+SpriteMorph.prototype.freshPalette = function (category) {
+    var palette = new ScrollFrameMorph(null, null, this.sliderColor),
+        unit = SyntaxElementMorph.prototype.fontSize,
+        x = 0,
+        y = 5,
+        ry = 0,
+        blocks,
+        hideNextSpace = false,
+        myself = this,
+        stage = this.parentThatIsA(StageMorph),
+        oldFlag = Morph.prototype.trackChanges;
+
+    Morph.prototype.trackChanges = false;
+
+    palette.owner = this;
+    palette.padding = unit / 2;
+    palette.color = this.paletteColor;
+    palette.growth = new Point(0, MorphicPreferences.scrollBarSize);
+
+    // menu:
+
+    palette.userMenu = function () {
+        var menu = new MenuMorph(),
+            ide = this.parentThatIsA(IDE_Morph),
+            more = {
+                operators:
+                    ['reifyScript', 'reifyReporter', 'reifyPredicate'],
+                control:
+                    ['doWarp'],
+                variables:
+                    [
+                        'doDeclareVariables',
+                        'reportNewList',
+                        'reportCONS',
+                        'reportListItem',
+                        'reportCDR',
+                        'reportListLength',
+                        'reportListContainsItem',
+                        'doAddToList',
+                        'doDeleteFromList',
+                        'doInsertInList',
+                        'doReplaceInList'
+                    ]
+            };
+
+        function hasHiddenPrimitives() {
+            var defs = SpriteMorph.prototype.blocks,
+                hiddens = StageMorph.prototype.hiddenPrimitives;
+            return Object.keys(hiddens).some(function (any) {
+                return !isNil(defs[any]) && (defs[any].category === category
+                    || contains((more[category] || []), any));
+            });
+        }
+
+        function canHidePrimitives() {
+            return palette.contents.children.some(function (any) {
+                return contains(
+                    Object.keys(SpriteMorph.prototype.blocks),
+                    any.selector
+                );
+            });
+        }
+
+        menu.addItem('find blocks...', function () {myself.searchBlocks(); });
+        if (canHidePrimitives()) {
+            menu.addItem(
+                'hide primitives',
+                function () {
+                    var defs = SpriteMorph.prototype.blocks;
+                    Object.keys(defs).forEach(function (sel) {
+                        if (defs[sel].category === category) {
+                            StageMorph.prototype.hiddenPrimitives[sel] = true;
+                        }
+                    });
+                    (more[category] || []).forEach(function (sel) {
+                        StageMorph.prototype.hiddenPrimitives[sel] = true;
+                    });
+                    ide.flushBlocksCache(category);
+                    ide.refreshPalette();
+                }
+            );
+        }
+        if (hasHiddenPrimitives()) {
+            menu.addItem(
+                'show primitives',
+                function () {
+                    var hiddens = StageMorph.prototype.hiddenPrimitives,
+                        defs = SpriteMorph.prototype.blocks;
+                    Object.keys(hiddens).forEach(function (sel) {
+                        if (defs[sel] && (defs[sel].category === category)) {
+                            delete StageMorph.prototype.hiddenPrimitives[sel];
+                        }
+                    });
+                    (more[category] || []).forEach(function (sel) {
+                        delete StageMorph.prototype.hiddenPrimitives[sel];
+                    });
+                    ide.flushBlocksCache(category);
+                    ide.refreshPalette();
+                }
+            );
+        }
+        return menu;
+    };
+
+    // primitives:
+
+    blocks = this.blocksCache[category];
+    if (!blocks) {
+        blocks = myself.blockTemplates(category);
+        if (this.isCachingPrimitives) {
+            myself.blocksCache[category] = blocks;
+        }
+    }
+
+    blocks.forEach(function (block) {
+        if (block === null) {
+            return;
+        }
+        if (block === '-') {
+            if (hideNextSpace) {return; }
+            y += unit * 0.8;
+            hideNextSpace = true;
+        } else if (block === '=') {
+            if (hideNextSpace) {return; }
+            y += unit * 1.6;
+            hideNextSpace = true;
+        } else if (block === '#') {
+            x = 0;
+            y = ry;
+        } else {
+            hideNextSpace = false;
+            if (x === 0) {
+                y += unit * 0.3;
+            }
+            block.setPosition(new Point(x, y));
+            palette.addContents(block);
+            if (block instanceof ToggleMorph
+                    || (block instanceof RingMorph)) {
+                x = block.right() + unit / 2;
+                ry = block.bottom();
+            } else {
+                // if (block.fixLayout) {block.fixLayout(); }
+                x = 0;
+                y += block.height();
+            }
+        }
+    });
+
+    // global custom blocks:
+
+    if (stage) {
+        y += unit * 1.6;
+
+        stage.globalBlocks.forEach(function (definition) {
+            var block;
+            if (definition.category === category ||
+                    (category === 'variables'
+                        && contains(
+                            ['lists'],
+                            definition.category
+                        ))) {
+                block = definition.templateInstance();
+                y += unit * 0.3;
+                block.setPosition(new Point(x, y));
+                palette.addContents(block);
+                x = 0;
+                y += block.height();
+            }
+        });
+    }
+
+    // local custom blocks:
+
+    y += unit * 1.6;
+    this.customBlocks.forEach(function (definition) {
+        var block;
+        if (definition.category === category ||
+                (category === 'variables'
+                    && contains(
+                        ['lists'],
+                        definition.category
+                    ))) {
+            block = definition.templateInstance();
+            y += unit * 0.3;
+            block.setPosition(new Point(x, y));
+            palette.addContents(block);
+            x = 0;
+            y += block.height();
+        }
+    });
+
+    //layout
+
+    palette.scrollX(palette.padding);
+    palette.scrollY(palette.padding);
+
+    Morph.prototype.trackChanges = oldFlag;
+    return palette;
+};
+
+SpriteMorph.prototype.reportAnalogReading = function (pin) {
+    if (this.arduino.isBoardReady()) {
+        var board = this.arduino.board;
+
+        if (!pin) { return 0 };
+
+        if (board.pins[board.analogPins[pin]].mode != board.MODES.ANALOG) {
+            board.pinMode(board.analogPins[pin], board.MODES.ANALOG);
+        }
+
+        return board.pins[board.analogPins[pin]].value;
+
+    } else {
+        return 0;
+    }
+};
+
+SpriteMorph.prototype.reportDigitalReading = function (pin) {
+    if (this.arduino.isBoardReady()) {
+        var board = this.arduino.board;
+
+        if (!pin) { return false };
+
+        if (board.pins[pin].mode != board.MODES.INPUT) {
+            board.pinMode(pin, board.MODES.INPUT);
+            board.digitalRead(pin, function(value) { board.pins[pin].value = value });
+        }
+        return board.pins[pin].value == 1;
+    } else {
+        return false;
+    }
+};
+
+SpriteMorph.prototype.arduinoWatcher = function (selector, label, color, pin) {
+    var stage = this.parentThatIsA(StageMorph),
+        watcher,
+        others;
+    if (!stage) { return; }
+    watcher = this.arduinoWatcherFor(stage, selector, pin);
+    if (watcher) {
+        if (watcher.isVisible) {
+            watcher.hide();
+        } else {
+            watcher.show();
+            watcher.fixLayout(); // re-hide hidden parts
+            watcher.keepWithin(stage);
+        }
+        return;
+    }
+
+    // if no watcher exists, create a new one
+    watcher = new WatcherMorph(
+        label.replace(/%.*\s*/, pin),
+        color,
+        WatcherMorph.prototype.isGlobal(selector) ? stage : this,
+        selector
+    );
+    watcher.pin = pin;
+    watcher.update = function () {
+        var newValue, sprite, num;
+
+        this.updateLabel();
+        newValue = this.target[this.getter](pin);
+
+        if (newValue !== '' && !isNil(newValue)) {
+            num = +newValue;
+            if (typeof newValue !== 'boolean' && !isNaN(num)) {
+                newValue = Math.round(newValue * 1000000000) / 1000000000;
+            }
+        }
+        if (newValue !== this.currentValue) {
+            this.changed();
+            this.cellMorph.contents = newValue;
+            this.cellMorph.drawNew();
+            if (!isNaN(newValue)) {
+                this.sliderMorph.value = newValue;
+                this.sliderMorph.drawNew();
+            }
+            this.fixLayout();
+            this.currentValue = newValue;
+        }
+    };
+
+    watcher.setPosition(stage.position().add(10));
+    others = stage.watchers(watcher.left());
+    if (others.length > 0) {
+        watcher.setTop(others[others.length - 1].bottom());
+    }
+    stage.add(watcher);
+    watcher.fixLayout();
+    watcher.keepWithin(stage);
+};
+
+SpriteMorph.prototype.arduinoWatcherFor = function (stage, selector, pin) {
+    var myself = this;
+    return detect(stage.children, function (morph) {
+        return morph instanceof WatcherMorph &&
+            morph.getter === selector &&
+            morph.target === (morph.isGlobal(selector) ? stage : myself) &&
+            morph.pin === pin; 
+    });
+};
+
+SpriteMorph.prototype.showingArduinoWatcher = function (selector, pin) {
+    var stage = this.parentThatIsA(StageMorph),
+        watcher;
+    if (stage === null) {
+        return false;
+    }
+    watcher = this.arduinoWatcherFor(stage, selector, pin);
+    if (watcher) {
+        return watcher.isVisible;
+    }
+    return false;
+};
+

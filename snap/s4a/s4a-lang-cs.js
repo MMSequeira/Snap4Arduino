@@ -56,11 +56,20 @@ s4aTempDict = {
 	'clockwise':
 		'po směru hodin',
 
+	'clockwise (1500-1000)':
+		'po směru hodin (1500-1000)',
+
 	'counter-clockwise':
 		'proti směru hodin',
 
+	'counter-clockwise (1500-2000)':
+		'proti směru hodin (1500-2000)',
+
 	'stopped':
 		'zastaveno',
+
+	'stopped (1500)':
+		'zastaveno (1500)',
 
 	'angle (0-180)':
 		'úhel (0-180)',
@@ -71,7 +80,7 @@ s4aTempDict = {
     'disconnect Arduino':
         'odpojit Arduino',
 
-	'Connect Arduino':
+    'Connect Arduino':
         'Připojit Arduino',
 
     'Disconnect Arduino':
@@ -83,8 +92,11 @@ s4aTempDict = {
     'digital reading %digitalPin':
         'digitální vstup %digitalPin',
 
-    'connect arduino at %port':
-        'připojit Arduino na portu %port',
+    'connect arduino at %s':
+        'připojit Arduino na portu %s',
+
+    'disconnect arduino':
+        'odpojit Arduino',
 
     'setup digital pin %digitalPin as %pinMode':
         'nastav digitální pin %digitalPin jako %pinMode',
@@ -95,7 +107,7 @@ s4aTempDict = {
     'set servo %servoPin to %servoValue':
         'nastav servo %servoPin na %servoValue',
 
-    'set PWM pin %pwmPin to %n':
+    'set pin %pwmPin to value %n':
         'nastav PWM pin %pwmPin na %n',
 
     'Connecting board at port\n': 

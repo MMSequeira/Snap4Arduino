@@ -59,11 +59,20 @@ s4aTempDict = {
 	'clockwise':
 		'senso orario',
 
+	'clockwise (1500-1000)':
+		'senso orario (1500-1000)',
+
 	'counter-clockwise':
 		'senso anti-orario',
 
+	'counter-clockwise (1500-2000)':
+		'senso anti-orario (1500-2000)',
+
 	'stopped':
 		'fermo',
+
+	'stopped (1500)':
+		'fermo (1500)',
 
 	'angle (0-180)':
 		'angolo (0-180)',
@@ -86,8 +95,11 @@ s4aTempDict = {
     'digital reading %digitalPin':
         'lettura digitale %digitalPin',
 
-    'connect arduino at %port':
-        'collega arduino alla porta %port',
+    'connect arduino at %s':
+        'collega arduino alla porta %s',
+
+    'disconnect arduino':
+        'scollega arduino',
 
     'setup digital pin %digitalPin as %pinMode':
         'imposta il pin %digitalPin come %pinMode',
@@ -98,8 +110,8 @@ s4aTempDict = {
     'set servo %servoPin to %servoValue':
         'imposta servo %servoPin a %servoValue',
 
-    'set PWM pin %pwmPin to %n':
-        'imposta il pin PWM %pwmPin a %n',
+    'set pin %pwmPin to value %n':
+        'imposta il pin %pwmPin a %n',
 
     'Connecting board at port\n': 
         'Sto collegando la scheda alla porta\n',

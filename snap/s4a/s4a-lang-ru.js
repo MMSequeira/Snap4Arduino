@@ -49,11 +49,20 @@ s4aTempDict = {
 	'clockwise':
 		'по часовой стрелке',
 
+	'clockwise (1500-1000)':
+		'по часовой стрелке (1500-1000)',
+
 	'counter-clockwise':
 		'против часовой стрелки',
 
+	'counter-clockwise (1500-2000)':
+		'против часовой стрелки (1500-2000)',
+
 	'stopped':
 		'остановлен',
+
+	'stopped (1500)':
+		'остановлен (1500)',
 
 	'angle (0-180)':
 		'угол (0-180)',
@@ -76,8 +85,11 @@ s4aTempDict = {
     'digital reading %digitalPin':
         'цифровое значение %digitalPin',
 
-    'connect arduino at %port':
-        'подключиться к arduino через %port',
+    'connect arduino at %s':
+        'подключиться к arduino через %s',
+
+    'disconnect arduino':
+        'Отключиться от arduino',
 
     'setup digital pin %digitalPin as %pinMode':
         'настроить режим цифрового разъема %digitalPin как %pinMode',
@@ -88,7 +100,7 @@ s4aTempDict = {
     'set servo %servoPin to %servoValue':
         'изменить статус разъема серво %servoPin нa %servoValue',
 
-    'set PWM pin %pwmPin to %n':
+    'set pin %pwmPin to value %n':
         'изменить статус разъема PWM %pwmPin на %n',
 
     'Connecting board at port\n': 

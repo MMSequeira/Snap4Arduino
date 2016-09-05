@@ -41,29 +41,39 @@ s4aTempDict = {
     */
 
     // arduino:
-	'digital input':
-		'entrada digital',
 
-	'digital output':
-		'salida digital',
+    'digital input':
+        'entrada digital',
 
-	'PWM':
-		'PWM',
+    'digital output':
+        'salida digital',
 
-	'servo':
-		'servo',
+    'PWM':
+        'PWM',
 
-	'clockwise':
-		'sentido horario',
+    'servo':
+        'servo',
 
-	'counter-clockwise':
-		'sentido anti-horario',
+    'clockwise':
+        'sentido horario',
 
-	'stopped':
-		'parado',
+    'clockwise (1500-1000)':
+        'sentido horario (1500-1000)',
 
-	'angle (0-180)':
-		'ángulo (0-180)',
+    'counter-clockwise':
+        'sentido anti-horario',
+
+    'counter-clockwise (1500-2000)':
+        'sentido anti-horario (1500-2000)',
+
+    'stopped':
+        'parado',
+
+    'stopped (1500)':
+        'parado (1500)',
+
+    'angle (0-180)':
+        'ángulo (0-180)',
 
     'connect to Arduino':
         'conectar a Arduino',
@@ -71,7 +81,7 @@ s4aTempDict = {
     'disconnect Arduino':
         'desconectar Arduino',
 
-	'Connect Arduino':
+    'Connect Arduino':
         'Conectar Arduino',
 
     'Disconnect Arduino':
@@ -83,8 +93,11 @@ s4aTempDict = {
     'digital reading %digitalPin':
         'lectura digital %digitalPin',
 
-    'connect arduino at %port':
-        'conectar arduino en puerta %port',
+    'connect arduino at %s':
+        'conectar arduino al puerto %s',
+
+    'disconnect arduino':
+        'desconectar arduino',
 
     'setup digital pin %digitalPin as %pinMode':
         'configurar pin %digitalPin como %pinMode',
@@ -95,8 +108,8 @@ s4aTempDict = {
     'set servo %servoPin to %servoValue':
         'fijar servo %servoPin en %servoValue',
 
-    'set PWM pin %pwmPin to %n':
-        'fijar pin PWM %pwmPin en %n',
+    'set pin %pwmPin to value %n':
+        'fijar pin %pwmPin al valor %n',
 
     'Connecting board at port\n': 
         'Conectando tarjeta en la puerta\n',
@@ -123,14 +136,34 @@ s4aTempDict = {
         'No se pudo comunicar con Arduino en la puerta\n',
 
     'Check if firmata is loaded.':
-        'Revisar si tiene cargado el firmware Firmata.',
+        'Revise si tiene cargado el firmware Firmata.',
 
     'An error was detected on the board\n\n':
         'Se detectó un error en la tarjeta\n\n',
 
     'Board is not connected':
-        'La tarjeta no está conectada'
+        'La tarjeta no está conectada',
 
+    'New Arduino translatable project':
+        'Nuevo proyecto traducible a Arduino', 
+
+    'select a port':
+        'seleccione una puerta',
+
+    'Network port':
+        'Puerta de red',
+
+    'Enter hostname or ip address:':
+        'Introduzca el nombre del host o su dirección IP',
+
+    'Connecting to network port:\n':
+        'Conectando a puerta de red:\n',
+
+    'This may take a few seconds...':
+        'Esto puede tardar unos segundos...',
+
+    'Network serial ports':
+        'Puertas serie sobre red'
 };
 
 // Add attributes to original SnapTranslator.dict.es

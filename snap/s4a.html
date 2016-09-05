@@ -4,6 +4,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <title>Snap4Arduino @AppVersion</title>
         <link rel="shortcut icon" href="http://snap.berkeley.edu/fav3.gif" type="image/gif">
+        <script type="text/javascript" src="s4a/arduino.js"></script>
         <script type="text/javascript" src="morphic.js"></script>
         <script type="text/javascript" src="s4a/morphic.js"></script>
         <script type="text/javascript" src="widgets.js"></script>
@@ -60,6 +61,12 @@
             function loop() {
                 world.doOneCycle();
             };
+
+            require('nw.gui').Window.get().on('close', function () {
+                if (confirm(localize('Are you sure you want to leave?'))) {
+                    this.close(true);
+                } 
+            });
 
             // Add menubar for Mac version ('darwin') with node-webkit >10.0 (modules version 14)
             if (process.platform==='darwin' && +process.versions.modules >= 14) {

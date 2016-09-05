@@ -57,11 +57,20 @@ s4aTempDict = {
     'clockwise':
         'no sentido dos ponteiros do relógio',
 
+    'clockwise (1500-1000)':
+        'no sentido dos ponteiros do relógio (1500-1000)',
+
     'counter-clockwise':
         'no sentido contrário aos ponteiros do relógio',
 
+    'counter-clockwise (1500-2000)':
+        'no sentido contrário aos ponteiros do relógio (1500-2000)',
+
     'stopped':
         'parado',
+
+    'stopped (1500)':
+        'parado (1500)',
 
     'disconnected':
         'desligado',
@@ -82,28 +91,28 @@ s4aTempDict = {
         'Desligar Arduino',
 
     'analog reading %analogPin':
-        'valor analógico no pino %analogPin',
+        'o valor analógico no pino %analogPin',
 
     'digital reading %digitalPin':
-        'valor booleano no pino digital %digitalPin',
-
-    'connect arduino at %port':
-        'ligar a Arduino em %port',
+        'o valor booleano no pino digital %digitalPin é «verdadeiro»',
 
     'connect arduino at %s':
-        'ligar a Arduino em %s',
+        'liga ao Arduino em %s',
+
+    'disconnect arduino':
+        'desliga do Arduino',
 
     'setup digital pin %digitalPin as %pinMode':
-        'configurar pino digital %digitalPin como %pinMode',
+        'configura o pino digital %digitalPin como %pinMode',
 
     'set digital pin %digitalPin to %b':
-        'colocar no pino digital %digitalPin o valor booleano %b',
+        'coloca no pino digital %digitalPin o valor booleano %b',
 
     'set servo %servoPin to %servoValue':
-        'colocar o servo %servoPin %servoValue',
+        'coloca o servo %servoPin %servoValue',
 
-    'set PWM pin %pwmPin to %n':
-        'colocar no pino PWM %pwmPin o valor %n',
+    'set pin %pwmPin to value %n':
+        'coloca no pino (PWM) %pwmPin o valor %n',
 
     'Connecting board at port\n': 
         'Ligando placa no porto\n',

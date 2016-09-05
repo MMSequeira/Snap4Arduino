@@ -57,11 +57,20 @@ s4aTempDict = {
     'clockwise':
         'sentit horari',
 
+    'clockwise (1500-1000)':
+        'sentit horari (1500-1000)',
+
     'counter-clockwise':
         'sentit anti-horari',
 
+    'counter-clockwise (1500-2000)':
+        'sentit anti-horari (1500-2000)',
+
     'stopped':
         'aturat',
+
+    'stopped (1500)':
+        'aturat (1500)',
 
     'disconnected':
         'desconnectat',
@@ -70,16 +79,16 @@ s4aTempDict = {
         'angle (0-180)',
 
     'connect to Arduino':
-        'connectar a Arduino',
+        'connecta a Arduino',
 
     'disconnect Arduino':
-        'desconnectar Arduino',
+        'desconnecta Arduino',
 
     'Connect Arduino':
-        'Connectar Arduino',
+        'Connecta Arduino',
 
     'Disconnect Arduino':
-        'Desconnectar Arduino',
+        'Desconnecta Arduino',
 
     'analog reading %analogPin':
         'lectura analògica %analogPin',
@@ -87,20 +96,23 @@ s4aTempDict = {
     'digital reading %digitalPin':
         'lectura digital %digitalPin',
 
-    'connect arduino at %port':
-        'connectar arduino al port %port',
+    'connect arduino at %s':
+        'connecta l\'Arduino al port %s',
+
+    'disconnect arduino':
+        'desconnecta l\'Arduino',
 
     'setup digital pin %digitalPin as %pinMode':
-        'configurar pin %digitalPin com a %pinMode',
+        'configura pin %digitalPin com a %pinMode',
 
     'set digital pin %digitalPin to %b':
-        'posar pin digital %digitalPin a %b',
+        'posa el pin digital %digitalPin a %b',
 
     'set servo %servoPin to %servoValue':
-        'posar servo %servoPin a %servoValue',
+        'posa el servo %servoPin a %servoValue',
 
-    'set PWM pin %pwmPin to %n':
-        'posar pin PWM %pwmPin a %n',
+    'set pin %pwmPin to value %n':
+        'posa el pin %pwmPin al valor %n',
 
     'Connecting board at port\n': 
         'Connectant placa al port\n',
@@ -136,8 +148,25 @@ s4aTempDict = {
         'La placa no està connectada',
 
     'New Arduino translatable project':
-        'Nou projecte traduïble a Arduino' 
+        'Nou projecte traduïble a Arduino', 
 
+    'select a port':
+        'selecciona un port',
+
+    'Network port':
+        'Port de xarxa',
+
+    'Enter hostname or ip address:':
+        'Introdueix el nom de l\'host o adreça IP',
+
+    'Connecting to network port:\n':
+        'Connectant a port de xarxa:\n',
+
+    'This may take a few seconds...':
+        'Aquesta operació pot trigar uns segons...',
+
+    'Network serial ports':
+        'Ports sèrie sobre xarxa'
 };
 
 // Add attributes to original SnapTranslator.dict.ca

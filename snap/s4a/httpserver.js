@@ -1,17 +1,59 @@
 // HTTP protocol, based on S4A's
 
 IDE_Morph.prototype.originalInit = IDE_Morph.prototype.init;
-IDE_Morph.prototype.init = function(globals) {
+IDE_Morph.prototype.init = function (globals) {
     this.originalInit(globals);
 
     var myself = this;
 
     if (this.httpServer) { this.httpServer.close() };
     this.httpServer = require('http').createServer(function(request, response) { myself.handleHTTPRequest(request, response) });
-    this.httpServer.listen(42001, function() {});
-}
+    this.httpServer.setTimeout(500);
 
-IDE_Morph.prototype.handleHTTPRequest = function(request, response) {
+    this.isServerOn = false;
+};
+
+IDE_Morph.prototype.toggleServer = function () {
+    if (this.isServerOn) {
+        this.stopServer();
+    } else {
+        this.startServer();
+    }
+};
+
+IDE_Morph.prototype.startServer = function () {
+    var myself = this,
+        ifaces = require('os').networkInterfaces(),
+        ips = '';
+
+    Object.keys(ifaces).forEach(function (key) {
+        ips += '\nhttp://' + ifaces[key][0].address + ':42001';
+    });
+
+    this.httpServer.listen(
+            42001, 
+            function() {
+                myself.isServerOn = true;
+                myself.inform(
+                        'HTTP server', 
+                        'This Snap4Arduino instance can be remotely\n'
+                        + 'controlled from the following addresses:\n'
+                        + ips)
+            });
+};
+
+IDE_Morph.prototype.stopServer = function () {
+    var myself = this;
+    myself.isServerOn = false;
+    this.httpServer.close(
+            function () {
+                myself.inform('HTTP server', 'HTTP server connection closed');
+            });
+};
+
+IDE_Morph.prototype.handleHTTPRequest = function (request, response) {
+    if (!this.isServerOn) { return; };
+
     var myself = this;
 
     response.setHeader('Access-Control-Allow-Origin', '*');
@@ -66,9 +108,9 @@ IDE_Morph.prototype.handleHTTPRequest = function(request, response) {
                     var contents = 'broadcast',
                         stage = myself.stage;
 
-                    stage.children.concat(stage).forEach(function(morph) {
+                    stage.children.concat(stage).forEach(function (morph) {
                         if (morph instanceof SpriteMorph || morph instanceof StageMorph) {
-                            morph.allMessageNames().forEach(function(message) {
+                            morph.allMessageNames().forEach(function (message) {
                                 contents += ' "' + message + '"';
                             });
                         }
@@ -81,12 +123,20 @@ IDE_Morph.prototype.handleHTTPRequest = function(request, response) {
                     var contents = 'sensor-update',
                         stage = myself.stage;
 
-                    Object.keys(stage.globalVariables().vars).forEach(function(varName) {
+                    Object.keys(stage.globalVariables().vars).forEach(function (varName) {
                         contents += ' "' + varName + '" ' + stage.globalVariables().vars[varName].value;
                     });
 
                     response.end(contents);
                     break;
+
+                case 'send-var':
+                    var stage = myself.stage,
+                        varName = command[1];
+
+                    response.end(stage.globalVariables().vars[varName].value);
+                    break;
+
                 case 'stage':
                     var contents = '<html><img id="stage" src="' + myself.stage.fullImageClassic().toDataURL() + '" /><script>' +
                         'var ajax = new XMLHttpRequest();' +
@@ -99,9 +149,16 @@ IDE_Morph.prototype.handleHTTPRequest = function(request, response) {
                         '</script></html>';
                     response.end(contents);
                     break;
+
                 case 'stageimg':
                     response.setHeader('Cache-Control', 'no-cache');
                     response.end(myself.stage.fullImageClassic().toDataURL());
+                    break;
+
+                case 'push':
+                    response.end('Pushing project to file system');
+                    var str = myself.serializer.serialize(myself.stage);
+                    require('fs').writeFile(homePath() + 'autorun.xml', str);
                     break;
             }
         }
@@ -127,5 +184,5 @@ IDE_Morph.prototype.handleHTTPRequest = function(request, response) {
     }
 
     response.end('Unknown command');
-}
+};
 

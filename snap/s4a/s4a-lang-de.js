@@ -56,11 +56,20 @@ s4aTempDict = {
 	'clockwise':
 		'im Uhrzeigersinn',
 
+	'clockwise (1500-1000)':
+		'im Uhrzeigersinn (1500-1000)',
+
 	'counter-clockwise':
 		'gegen den Uhrzeigersinn',
 
+	'counter-clockwise (1500-2000)':
+		'gegen den Uhrzeigersinn (1500-2000)',
+
 	'stopped':
 		'gestoppt',
+
+	'stopped (1500)':
+		'gestoppt (1500)',
 
 	'angle (0-180)':
 		'Winkel (0-180)',
@@ -83,8 +92,11 @@ s4aTempDict = {
     'digital reading %digitalPin':
         'lies digitalen Pin %digitalPin',
 
-    'connect arduino at %port':
-        'verbinde Arduino an Port %port',
+    'connect arduino at %s':
+        'verbinde Arduino an Port %s',
+
+    'disconnect arduino':
+        'verbindung zu Arduino trennen',
 
     'setup digital pin %digitalPin as %pinMode':
         'Einrichten des digitalen Pins %digitalPin als %pinMode',
@@ -95,8 +107,8 @@ s4aTempDict = {
     'set servo %servoPin to %servoValue':
         'Setze Servo %servoPin auf %servoValue',
 
-    'set PWM pin %pwmPin to %n':
-        'Setze PWM-Pin %pwmPin auf %n',
+    'set pin %pwmPin to value %n':
+        'Setze Pin %pwmPin auf %n',
 
     'Connecting board at port\n': 
         'Verbinde mit Board an Port\n',
